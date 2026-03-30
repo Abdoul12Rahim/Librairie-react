@@ -1,9 +1,11 @@
 import { useParams, Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { fetchBookDetail, fetchWikipedia } from "../api";
+import { useLibrary, ReadingStatus } from "../context/LibraryContext";
 // Page de détails d'un livre
 export const BookPage = () => {
   const { id } = useParams();
+  const { isFavorite, toggleFavorite, getReadingStatus, setReadingStatus } = useLibrary();
 
   // 1. Appel API Livre
   const { data: book, isLoading: loadingBook } = useQuery({
@@ -29,27 +31,78 @@ export const BookPage = () => {
     return pageId === "-1" ? "Pas d'article Wikipedia pour ce titre précis." : pages[pageId].extract;
   };
 
+  const fav = isFavorite(id!);
+  const status = getReadingStatus(id!);
+
+  const handleFavorite = () => {
+    toggleFavorite({
+      id: id!,
+      title: book.title,
+      coverId: book.covers?.[0],
+    });
+  };
+
+  const handleStatus = (newStatus: ReadingStatus | null) => {
+    setReadingStatus(id!, newStatus === status ? null : newStatus);
+  };
+
   return (
     <div>
-      <Link to="/search">← Retour à la recherche</Link>
+      <Link to="/search" className="back-link">← Retour à la recherche</Link>
       
-      <div style={{ marginTop: "20px", display: "flex", gap: "40px", flexWrap: "wrap" }}>
+      <div className="book-detail-layout">
         {/* Colonne Image */}
-        <div>
+        <div className="book-detail-cover">
            {book.covers ? (
              <img 
                src={`https://covers.openlibrary.org/b/id/${book.covers[0]}-L.jpg`} 
                alt={book.title}
-               style={{ maxWidth: "300px", borderRadius: "10px", boxShadow: "0 4px 8px rgba(0,0,0,0.2)" }} 
+               className="book-detail-img"
              />
            ) : (
-             <div style={{ width: 200, height: 300, background: "#ccc", display:"flex", alignItems:"center", justifyContent:"center" }}>Pas d'image</div>
+             <div className="book-cover-placeholder">📖</div>
            )}
+
+           {/* Actions */}
+           <div className="book-actions">
+             <button
+               className={`btn-fav-large${fav ? " active" : ""}`}
+               onClick={handleFavorite}
+             >
+               {fav ? "❤️ Dans mes favoris" : "🤍 Ajouter aux favoris"}
+             </button>
+
+             <div className="status-selector">
+               <p className="status-label">Statut de lecture :</p>
+               <div className="status-buttons">
+                 <button
+                   className={`btn-status${status === "to-read" ? " active-to-read" : ""}`}
+                   onClick={() => handleStatus("to-read")}
+                 >
+                   📌 À lire
+                 </button>
+                 <button
+                   className={`btn-status${status === "read" ? " active-read" : ""}`}
+                   onClick={() => handleStatus("read")}
+                 >
+                   ✅ Déjà lu
+                 </button>
+               </div>
+             </div>
+           </div>
         </div>
 
         {/* Colonne Infos */}
         <div style={{ flex: 1 }}>
           <h1 style={{ fontSize: "2.5rem", marginBottom: "0.5rem" }}>{book.title}</h1>
+
+          {/* Badge statut affiché dans les infos aussi */}
+          {status && (
+            <span className={`status-badge status-badge-${status}`}>
+              {status === "read" ? "✅ Déjà lu" : "📌 À lire"}
+            </span>
+          )}
+
           <h3>Description (OpenLibrary)</h3>
           <p>{typeof book.description === 'string' ? book.description : book.description?.value || "Pas de description officielle."}</p>
 
@@ -57,7 +110,7 @@ export const BookPage = () => {
           
           <h3>Savoir encyclopédique (Wikipedia)</h3>
           {loadingWiki ? <p>Recherche sur Wikipedia...</p> : (
-            <p style={{ lineHeight: "1.6", background: "#f0f8ff", padding: "15px", borderRadius: "8px" }}>
+            <p className="wiki-extract">
               {getWikiExtract()}
             </p>
           )}
@@ -67,9 +120,9 @@ export const BookPage = () => {
             href={`https://en.wikipedia.org/wiki/${book.title}`} 
             target="_blank" 
             rel="noreferrer"
-            style={{ display:"inline-block", marginTop: "10px", color: "blue" }}
+            className="wiki-link"
           >
-            Voir l'article complet sur Wikipedia
+            Voir l'article complet sur Wikipedia →
           </a>
         </div>
       </div>

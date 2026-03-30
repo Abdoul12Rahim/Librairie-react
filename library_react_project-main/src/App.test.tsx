@@ -3,6 +3,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BookPage } from './pages/BookPage';
+import { LibraryProvider } from './context/LibraryContext';
 
 // On Mock les appels API pour ne pas dépendre d'internet
 vi.mock('./api', () => ({
@@ -19,13 +20,15 @@ vi.mock('./api', () => ({
 const renderWithProviders = (ui: React.ReactNode) => {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
-    <QueryClientProvider client={client}>
-      <MemoryRouter initialEntries={['/book/OL123W']}>
-        <Routes>
-          <Route path="/book/:id" element={ui} />
-        </Routes>
-      </MemoryRouter>
-    </QueryClientProvider>
+    <LibraryProvider>
+      <QueryClientProvider client={client}>
+        <MemoryRouter initialEntries={['/book/OL123W']}>
+          <Routes>
+            <Route path="/book/:id" element={ui} />
+          </Routes>
+        </MemoryRouter>
+      </QueryClientProvider>
+    </LibraryProvider>
   );
 };
 // Tests d'intégration pour la page BookPage

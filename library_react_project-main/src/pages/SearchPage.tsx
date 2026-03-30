@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { useDebounce } from "use-debounce";
 import { searchBooks } from "../api";
+import { useLibrary } from "../context/LibraryContext";
 // Page de recherche avancée
 export const SearchPage = () => {
   // États pour les filtres
@@ -10,6 +11,8 @@ export const SearchPage = () => {
   const [author, setAuthor] = useState("");
   const [subject, setSubject] = useState(""); 
   const [isbn, setIsbn] = useState("");       
+
+  const { isFavorite, toggleFavorite } = useLibrary();
 
   // On debounce CHAQUE champ 
   // on a regroupe tout dans un objet pour n'avoir qu'un seul debounce
@@ -25,59 +28,79 @@ export const SearchPage = () => {
 
   return (
     <div>
-      <h1>Recherche Avancée</h1>
+      <div className="page-banner">
+        <h1>🔎 Recherche Avancée</h1>
+        <p>Trouvez un livre par titre, auteur, genre ou ISBN</p>
+      </div>
       
       {/* Grille de formulaire */}
-      <div style={{ background: "white", padding: "20px", borderRadius: "8px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "30px" }}>
+      <div className="search-form-grid">
         
-        <div>
-          <label style={{display: "block", fontWeight: "bold"}}>Titre</label>
+        <div className="form-group">
+          <label className="form-label">Titre</label>
           <input 
             type="text" value={title} onChange={(e) => setTitle(e.target.value)} 
-            style={{width: "100%", padding: "8px"}} placeholder="Harry Potter..."
+            className="form-input" placeholder="Harry Potter..."
           />
         </div>
 
-        <div>
-          <label style={{display: "block", fontWeight: "bold"}}>Auteur</label>
+        <div className="form-group">
+          <label className="form-label">Auteur</label>
           <input 
             type="text" value={author} onChange={(e) => setAuthor(e.target.value)} 
-            style={{width: "100%", padding: "8px"}} placeholder="J.K. Rowling..."
+            className="form-input" placeholder="J.K. Rowling..."
           />
         </div>
 
-        <div>
-          <label style={{display: "block", fontWeight: "bold"}}>Sujet / Genre</label>
+        <div className="form-group">
+          <label className="form-label">Sujet / Genre</label>
           <input 
             type="text" value={subject} onChange={(e) => setSubject(e.target.value)} 
-            style={{width: "100%", padding: "8px"}} placeholder="Fantasy, Horror, Science..."
+            className="form-input" placeholder="Fantasy, Horror, Science..."
           />
         </div>
 
-        <div>
-          <label style={{display: "block", fontWeight: "bold"}}>ISBN</label>
+        <div className="form-group">
+          <label className="form-label">ISBN</label>
           <input 
             type="text" value={isbn} onChange={(e) => setIsbn(e.target.value)} 
-            style={{width: "100%", padding: "8px"}} placeholder="978-..."
+            className="form-input" placeholder="978-..."
           />
         </div>
       </div>
 
-      {isLoading && <p>Recherche en cours...</p>}
+      {isLoading && <p className="loading-state">Recherche en cours...</p>}
 
       {/* Résultats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: "20px" }}>
+      <div className="search-results-grid">
         {data?.docs?.map((book: any) => {
            const id = book.key.split("/").pop();
+           const fav = isFavorite(id);
            return (
-            <div key={book.key} style={{ background: "white", padding: "10px", border: "1px solid #eee", borderRadius: "8px" }}>
-              {/* Petite optimisation : on affiche la couverture petite pour la liste */}
+            <div key={book.key} className="search-result-card">
               {book.cover_i && (
-                 <img src={`https://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg`} alt="" style={{float:"right"}} />
+                 <img src={`https://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg`} alt="" className="search-result-cover" />
               )}
-              <h4 style={{margin: "0 0 5px"}}>{book.title}</h4>
-              <p style={{fontSize: "0.8rem", color: "#666"}}>{book.author_name?.[0]}</p>
-              <Link to={`/book/${id}`} style={{fontSize: "0.9rem", color: "blue"}}>Voir</Link>
+              <div className="search-result-info">
+                <h4 className="book-title" style={{ margin: "0 0 5px" }}>{book.title}</h4>
+                <p style={{ fontSize: "0.8rem", color: "#666", margin: "0 0 8px" }}>{book.author_name?.[0]}</p>
+                <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                  <Link to={`/book/${id}`} className="btn-details">Voir →</Link>
+                  <button
+                    className={`btn-fav${fav ? " active" : ""}`}
+                    style={{ position: "static" }}
+                    onClick={() => toggleFavorite({
+                      id,
+                      title: book.title,
+                      author: book.author_name?.[0],
+                      coverId: book.cover_i,
+                    })}
+                    title={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
+                  >
+                    {fav ? "❤️" : "🤍"}
+                  </button>
+                </div>
+              </div>
             </div>
            )
         })}

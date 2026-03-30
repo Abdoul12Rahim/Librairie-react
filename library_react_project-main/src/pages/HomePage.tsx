@@ -1,56 +1,54 @@
 import { useQuery } from "@tanstack/react-query";
 import { fetchTrendingBooks } from "../api";
 import { Link } from "react-router-dom";
+import { useLibrary } from "../context/LibraryContext";
 // Page d'accueil affichant les livres tendances
 export const HomePage = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ["trending"],
     queryFn: fetchTrendingBooks,
   });
+  const { isFavorite, toggleFavorite } = useLibrary();
 
-  if (isLoading) return <div style={{ display: "flex", justifyContent: "center", marginTop: "50px" }}>Chargement...</div>;
+  if (isLoading) return <div className="loading-state">Chargement...</div>;
   if (error) return <p style={{ color: "red", textAlign: "center" }}>Erreur de chargement</p>;
 
   return (
-    <div style={{ width: "100%" }}> {/* Force le conteneur à 100% */}
+    <div style={{ width: "100%" }}>
       
       {/* Bannière de titre */}
-      <div style={{ textAlign: "center", marginBottom: "40px", padding: "40px 20px", background: "white", borderRadius: "10px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
-        <h1 style={{ fontSize: "2.5rem", margin: 0, color: "#333" }}>📚 Bibliothèque Municipale</h1>
-        <p style={{ color: "#666", marginTop: "10px" }}>Découvrez les tendances du moment</p>
+      <div className="page-banner">
+        <h1>📚 Bibliothèque Municipale</h1>
+        <p>Découvrez les tendances du moment</p>
       </div>
       
-      <h2 style={{ marginBottom: "20px", marginLeft: "10px", borderLeft: "5px solid #333", paddingLeft: "10px" }}>🔥 Tendances du jour</h2>
+      <h2 className="section-title">🔥 Tendances du jour</h2>
 
       {/* Grille Responsive */}
-      <div style={{ 
-        display: "grid", 
-        // Cette ligne magique fait que les cartes font minimum 220px, et remplissent le reste
-        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", 
-        gap: "25px",
-        padding: "10px" // Petit padding pour éviter que ça colle aux bords
-      }}>
+      <div className="book-grid">
         
         {data?.works?.map((book: any) => {
           const id = book.key.split("/").pop();
+          const fav = isFavorite(id);
           return (
-            <Link to={`/book/${id}`} key={book.key} style={{ textDecoration: "none" }}>
-              <div style={{ 
-                background: "white",
-                borderRadius: "12px", 
-                overflow: "hidden", // Pour que l'image ne dépasse pas
-                boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
-                transition: "transform 0.2s",
-                height: "100%", // Pour que toutes les cartes aient la même hauteur
-                display: "flex",
-                flexDirection: "column"
-              }}
-              // Petit effet au survol (hover) en inline style n'est pas possible facilement en React pur sans CSS, 
-              // mais la structure est propre.
+            <div key={book.key} className="book-card">
+              {/* Bouton favori */}
+              <button
+                className={`btn-fav${fav ? " active" : ""}`}
+                onClick={() => toggleFavorite({
+                  id,
+                  title: book.title,
+                  author: book.author_name?.[0],
+                  coverId: book.cover_i,
+                })}
+                title={fav ? "Retirer des favoris" : "Ajouter aux favoris"}
               >
-                
+                {fav ? "❤️" : "🤍"}
+              </button>
+
+              <Link to={`/book/${id}`} style={{ textDecoration: "none", flex: 1, display: "flex", flexDirection: "column" }}>
                 {/* Conteneur Image */}
-                <div style={{ height: "250px", background: "#f4f4f4", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <div className="book-cover">
                   {book.cover_i ? (
                     <img 
                       src={`https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`} 
@@ -58,22 +56,22 @@ export const HomePage = () => {
                       style={{ height: "100%", width: "100%", objectFit: "cover" }}
                     />
                   ) : (
-                    <span style={{ fontSize: "2rem" }}>📖</span>
+                    <span style={{ fontSize: "3rem" }}>📖</span>
                   )}
                 </div>
 
                 {/* Conteneur Info */}
-                <div style={{ padding: "15px", flex: 1, display: "flex", flexDirection: "column" }}>
-                  <h3 style={{ fontSize: "1.1rem", margin: "0 0 5px 0", color: "#222" }}>{book.title}</h3>
-                  <p style={{ fontSize: "0.9rem", color: "#666", margin: "0" }}>
+                <div className="book-card-body">
+                  <h3 className="book-title">{book.title}</h3>
+                  <p className="book-author">
                     {book.author_name ? book.author_name[0] : "Auteur inconnu"}
                   </p>
-                  <div style={{ marginTop: "auto", paddingTop: "15px" }}>
-                    <span style={{ color: "#007bff", fontSize: "0.9rem", fontWeight: "bold" }}>Voir le détail →</span>
+                  <div className="book-card-footer">
+                    <span className="btn-details">Voir le détail →</span>
                   </div>
                 </div>
-              </div>
-            </Link>
+              </Link>
+            </div>
           );
         })}
       </div>
